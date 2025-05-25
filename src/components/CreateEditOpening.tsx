@@ -1,8 +1,9 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Chess } from 'chess.js';
 import { Save, Undo, Plus } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { openingsStore } from '../store/openingsStore';
 import ChessBoard from './ChessBoard';
 
 interface CreateEditOpeningProps {
@@ -13,12 +14,29 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [game] = useState(new Chess());
-  const [openingName, setOpeningName] = useState(isEdit ? 'Sicilian Defense' : '');
+  const [openingName, setOpeningName] = useState('');
+  const [openingDescription, setOpeningDescription] = useState('');
   const [moves, setMoves] = useState<string[]>([]);
   const [variations, setVariations] = useState<any[]>([]);
   const [isAddingVariation, setIsAddingVariation] = useState(false);
   const [variationMoves, setVariationMoves] = useState<string[]>([]);
   const [variationStartMove, setVariationStartMove] = useState(0);
+
+  useEffect(() => {
+    if (isEdit && id) {
+      const opening = openingsStore.getOpeningById(id);
+      if (opening) {
+        setOpeningName(opening.name);
+        setOpeningDescription(opening.description);
+        setMoves(opening.moves);
+        setVariations(opening.variations);
+        
+        // Replay moves on the board
+        game.reset();
+        opening.moves.forEach(move => game.move(move));
+      }
+    }
+  }, [isEdit, id, game]);
 
   const handleMove = (move: string) => {
     if (isAddingVariation) {
@@ -79,14 +97,22 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
       return;
     }
 
-    // In a real app, this would save to database
-    console.log('Saving opening:', {
+    const openingData = {
       name: openingName,
       moves,
-      variations
-    });
+      variations,
+      description: openingDescription || 'No description provided'
+    };
 
-    navigate('/');
+    if (isEdit && id) {
+      openingsStore.updateOpening(id, openingData);
+      console.log('Updated opening:', openingData);
+    } else {
+      const newId = openingsStore.addOpening(openingData);
+      console.log('Created new opening with ID:', newId);
+    }
+
+    navigate('/openings');
   };
 
   return (
@@ -106,6 +132,19 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
               value={openingName}
               onChange={(e) => setOpeningName(e.target.value)}
               placeholder="Enter opening name..."
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-white text-sm font-medium mb-2">
+              Description
+            </label>
+            <input
+              type="text"
+              value={openingDescription}
+              onChange={(e) => setOpeningDescription(e.target.value)}
+              placeholder="Enter opening description..."
               className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             />
           </div>
@@ -151,7 +190,7 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
               className="flex items-center space-x-2 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
               <Save size={20} />
-              <span>Save Opening</span>
+              <span>{isEdit ? 'Update Opening' : 'Save Opening'}</span>
             </button>
           </div>
         </div>

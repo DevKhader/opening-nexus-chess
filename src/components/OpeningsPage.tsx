@@ -13,7 +13,18 @@ const OpeningsPage = ({ isAdmin }: OpeningsPageProps) => {
   const [openings, setOpenings] = useState(openingsStore.getAllOpenings());
 
   useEffect(() => {
+    // Refresh openings list whenever the component mounts
     setOpenings(openingsStore.getAllOpenings());
+  }, []);
+
+  // Also refresh when navigating back to this page
+  useEffect(() => {
+    const handleFocus = () => {
+      setOpenings(openingsStore.getAllOpenings());
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   const filteredOpenings = openings.filter(opening =>
