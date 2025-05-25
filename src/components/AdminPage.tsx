@@ -1,36 +1,16 @@
 
-import { useState } from 'react';
-import { Search, Plus, Edit, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Plus, Edit, Trash2, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-// Mock data for demonstration
-const mockOpenings = [
-  {
-    id: '1',
-    name: 'Sicilian Defense',
-    mainLineMoves: 8,
-    variations: 5,
-    description: 'The most popular chess opening'
-  },
-  {
-    id: '2',
-    name: 'Queen\'s Gambit',
-    mainLineMoves: 6,
-    variations: 3,
-    description: 'Classical opening for white'
-  },
-  {
-    id: '3',
-    name: 'King\'s Indian Defense',
-    mainLineMoves: 7,
-    variations: 4,
-    description: 'Dynamic counterattacking setup'
-  }
-];
+import { openingsStore } from '../store/openingsStore';
 
 const AdminPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [openings] = useState(mockOpenings);
+  const [openings, setOpenings] = useState(openingsStore.getAllOpenings());
+
+  useEffect(() => {
+    setOpenings(openingsStore.getAllOpenings());
+  }, []);
 
   const filteredOpenings = openings.filter(opening =>
     opening.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -38,8 +18,11 @@ const AdminPage = () => {
 
   const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this opening?')) {
-      // Delete logic would go here
-      console.log('Deleting opening:', id);
+      const success = openingsStore.deleteOpening(id);
+      if (success) {
+        setOpenings(openingsStore.getAllOpenings());
+        console.log('Deleted opening:', id);
+      }
     }
   };
 
@@ -83,18 +66,25 @@ const AdminPage = () => {
             <div className="space-y-2 mb-4">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-400">Main line moves:</span>
-                <span className="text-emerald-400 font-semibold">{opening.mainLineMoves}</span>
+                <span className="text-emerald-400 font-semibold">{opening.moves.length}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-400">Variations:</span>
-                <span className="text-emerald-400 font-semibold">{opening.variations}</span>
+                <span className="text-emerald-400 font-semibold">{opening.variations.length}</span>
               </div>
             </div>
 
             <div className="flex space-x-2">
               <Link
+                to={`/opening/${opening.id}`}
+                className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200"
+              >
+                <Eye size={16} />
+                <span>Explore</span>
+              </Link>
+              <Link
                 to={`/edit-opening/${opening.id}`}
-                className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
                 <Edit size={16} />
                 <span>Edit</span>

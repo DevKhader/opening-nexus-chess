@@ -2,10 +2,23 @@
 import { useState } from 'react';
 import { Chess } from 'chess.js';
 import { Link } from 'react-router-dom';
+import { Undo } from 'lucide-react';
 import ChessBoard from './ChessBoard';
 
 const HomePage = () => {
   const [game] = useState(new Chess());
+  const [moveHistory, setMoveHistory] = useState<string[]>([]);
+
+  const handleMove = (move: string) => {
+    setMoveHistory(prev => [...prev, move]);
+  };
+
+  const handleUndo = () => {
+    if (moveHistory.length > 0) {
+      game.undo();
+      setMoveHistory(prev => prev.slice(0, -1));
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -25,7 +38,17 @@ const HomePage = () => {
             <p className="text-slate-300 mb-6">
               Practice your moves on our interactive chess board. Make moves by clicking and dragging pieces.
             </p>
-            <ChessBoard game={game} isInteractive={true} />
+            <div className="flex flex-col items-center space-y-4">
+              <ChessBoard game={game} isInteractive={true} onMove={handleMove} />
+              <button
+                onClick={handleUndo}
+                disabled={moveHistory.length === 0}
+                className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              >
+                <Undo size={20} />
+                <span>Undo Move</span>
+              </button>
+            </div>
           </div>
         </div>
 

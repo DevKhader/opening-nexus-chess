@@ -1,26 +1,48 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Chess } from 'chess.js';
 import { ArrowLeft, ArrowRight, RotateCcw, ArrowLeft as BackIcon } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import ChessBoard from './ChessBoard';
+import { openingsStore, Opening } from '../store/openingsStore';
 
 const OpeningViewer = () => {
   const { id } = useParams();
   const [game] = useState(new Chess());
   const [currentMove, setCurrentMove] = useState(0);
+  const [opening, setOpening] = useState<Opening | null>(null);
+  const [currentVariation, setCurrentVariation] = useState<string[] | null>(null);
   
-  // Mock data - in real app this would come from database
-  const mockMoves = ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5', 'a6', 'Ba4', 'Nf6'];
-  const mockVariations = {
-    1: [{ name: 'French Defense', moves: ['e6', 'd4', 'Nf6'] }], // Variation at move 1 (after e4)
-    3: [{ name: 'Petrov Defense', moves: ['Nf6', 'Nxe5', 'd6'] }] // Variation at move 3 (after Nf3)
-  };
+  useEffect(() => {
+    if (id) {
+      const foundOpening = openingsStore.getOpeningById(id);
+      setOpening(foundOpening || null);
+    }
+  }, [id]);
+
+  if (!opening) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="text-center py-12">
+          <h1 className="text-2xl text-white">Opening not found</h1>
+          <Link
+            to="/openings"
+            className="inline-flex items-center space-x-2 text-emerald-400 hover:text-emerald-300 transition-colors duration-200 mt-4"
+          >
+            <BackIcon size={20} />
+            <span>Back to Openings</span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const currentMoves = currentVariation || opening.moves;
 
   const handleNext = () => {
-    if (currentMove < mockMoves.length) {
+    if (currentMove < currentMoves.length) {
       try {
-        game.move(mockMoves[currentMove]);
+        game.move(currentMoves[currentMove]);
         setCurrentMove(currentMove + 1);
       } catch (error) {
         console.error('Invalid move:', error);
@@ -38,10 +60,11 @@ const OpeningViewer = () => {
   const handleReset = () => {
     game.reset();
     setCurrentMove(0);
+    setCurrentVariation(null);
   };
 
   const handleVariation = (variation: any) => {
-    // Implementation for playing variations would go here
+    setCurrentVariation(variation.moves);
     console.log('Playing variation:', variation);
   };
 
@@ -51,6 +74,11 @@ const OpeningViewer = () => {
 
   const isWhiteMove = (index: number) => {
     return index % 2 === 0;
+  };
+
+  // Find variations that start at the next move
+  const getVariationsAtMove = (moveIndex: number) => {
+    return opening.variations.filter(variation => variation.startMove === moveIndex + 1);
   };
 
   return (
@@ -65,7 +93,7 @@ const OpeningViewer = () => {
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-white mb-8">Sicilian Defense</h1>
+      <h1 className="text-3xl font-bold text-white mb-8">{opening.name}</h1>
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
@@ -92,7 +120,7 @@ const OpeningViewer = () => {
               
               <button
                 onClick={handleNext}
-                disabled={currentMove >= mockMoves.length}
+                disabled={currentMove >= currentMoves.length}
                 className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
               >
                 <span>Next</span>
@@ -105,11 +133,11 @@ const OpeningViewer = () => {
         <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
           <h3 className="text-xl font-bold text-white mb-4">Move List</h3>
           <div className="space-y-2 max-h-96 overflow-y-auto">
-            {mockMoves.map((move, index) => {
+            {currentMoves.map((move, index) => {
               const moveNumber = formatMoveNumber(index);
               const isWhite = isWhiteMove(index);
               const isCurrentMove = index === currentMove - 1;
-              const hasVariation = mockVariations[index + 1];
+              const hasVariation = !currentVariation && getVariationsAtMove(index).length > 0;
 
               return (
                 <div key={index} className="space-y-1">
@@ -129,7 +157,7 @@ const OpeningViewer = () => {
                   
                   {hasVariation && index < currentMove && (
                     <div className="ml-6 space-y-1">
-                      {hasVariation.map((variation: any, vIndex: number) => (
+                      {getVariationsAtMove(index).map((variation, vIndex) => (
                         <button
                           key={vIndex}
                           onClick={() => handleVariation(variation)}
