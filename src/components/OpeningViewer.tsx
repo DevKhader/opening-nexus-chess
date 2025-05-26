@@ -12,6 +12,7 @@ const OpeningViewer = () => {
   const [currentMove, setCurrentMove] = useState(0);
   const [opening, setOpening] = useState<Opening | null>(null);
   const [currentVariation, setCurrentVariation] = useState<string[] | null>(null);
+  const [variationStartMove, setVariationStartMove] = useState(0);
   
   useEffect(() => {
     if (id) {
@@ -61,11 +62,30 @@ const OpeningViewer = () => {
     game.reset();
     setCurrentMove(0);
     setCurrentVariation(null);
+    setVariationStartMove(0);
   };
 
   const handleVariation = (variation: any) => {
-    setCurrentVariation(variation.moves);
     console.log('Playing variation:', variation);
+    
+    // Reset the game to starting position
+    game.reset();
+    
+    // Play main line moves up to the variation start point
+    for (let i = 0; i < variation.startMove - 1; i++) {
+      if (i < opening.moves.length) {
+        try {
+          game.move(opening.moves[i]);
+        } catch (error) {
+          console.error('Error playing main line move:', error);
+        }
+      }
+    }
+    
+    // Set the variation as current moves
+    setCurrentVariation(variation.moves);
+    setVariationStartMove(variation.startMove - 1);
+    setCurrentMove(0); // Reset to start of variation
   };
 
   const formatMoveNumber = (index: number) => {
@@ -93,7 +113,14 @@ const OpeningViewer = () => {
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-white mb-8">{opening.name}</h1>
+      <h1 className="text-3xl font-bold text-white mb-8">
+        {opening.name}
+        {currentVariation && (
+          <span className="text-emerald-400 text-xl ml-4">
+            - {opening.variations.find(v => v.moves === currentVariation)?.name}
+          </span>
+        )}
+      </h1>
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
@@ -131,7 +158,9 @@ const OpeningViewer = () => {
         </div>
 
         <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-          <h3 className="text-xl font-bold text-white mb-4">Move List</h3>
+          <h3 className="text-xl font-bold text-white mb-4">
+            {currentVariation ? 'Variation Moves' : 'Main Line'}
+          </h3>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {currentMoves.map((move, index) => {
               const moveNumber = formatMoveNumber(index);
@@ -172,6 +201,26 @@ const OpeningViewer = () => {
               );
             })}
           </div>
+          
+          {currentVariation && (
+            <button
+              onClick={() => {
+                setCurrentVariation(null);
+                setVariationStartMove(0);
+                game.reset();
+                opening.moves.slice(0, currentMove).forEach(move => {
+                  try {
+                    game.move(move);
+                  } catch (error) {
+                    console.error('Error replaying move:', error);
+                  }
+                });
+              }}
+              className="mt-4 w-full px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 transition-colors duration-200"
+            >
+              Back to Main Line
+            </button>
+          )}
         </div>
       </div>
     </div>
