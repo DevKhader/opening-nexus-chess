@@ -1,5 +1,5 @@
 
-import { Home, BookOpen, Shield, LogIn, LogOut } from 'lucide-react';
+import { Home, BookOpen, LogIn, LogOut } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 interface NavbarProps {
@@ -45,20 +45,6 @@ const Navbar = ({ isAdmin, onLogin, onLogout }: NavbarProps) => {
         </div>
 
         <div className="flex items-center space-x-4">
-          {isAdmin && (
-            <Link
-              to="/admin"
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                isActive('/admin') 
-                  ? 'bg-emerald-600 text-white shadow-lg' 
-                  : 'text-slate-300 hover:text-white hover:bg-slate-700'
-              }`}
-            >
-              <Shield size={20} />
-              <span className="font-medium">Admin</span>
-            </Link>
-          )}
-          
           {isAdmin ? (
             <button
               onClick={onLogout}
