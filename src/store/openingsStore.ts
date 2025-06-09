@@ -12,7 +12,7 @@ interface Opening {
 }
 
 class OpeningsStore {
-  private openings: Opening[] = [
+  private defaultOpenings: Opening[] = [
     {
       id: '1',
       name: 'Sicilian Defense',
@@ -42,35 +42,63 @@ class OpeningsStore {
     }
   ];
 
+  private loadOpenings(): Opening[] {
+    try {
+      const stored = localStorage.getItem('chess-openings');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+      console.error('Error loading openings from localStorage:', error);
+    }
+    // Return default openings if nothing is stored or there's an error
+    return [...this.defaultOpenings];
+  }
+
+  private saveOpenings(openings: Opening[]): void {
+    try {
+      localStorage.setItem('chess-openings', JSON.stringify(openings));
+    } catch (error) {
+      console.error('Error saving openings to localStorage:', error);
+    }
+  }
+
   getAllOpenings(): Opening[] {
-    return this.openings;
+    return this.loadOpenings();
   }
 
   getOpeningById(id: string): Opening | undefined {
-    return this.openings.find(opening => opening.id === id);
+    const openings = this.loadOpenings();
+    return openings.find(opening => opening.id === id);
   }
 
   addOpening(opening: Omit<Opening, 'id'>): string {
-    const id = (this.openings.length + 1).toString();
+    const openings = this.loadOpenings();
+    const id = (Date.now()).toString(); // Use timestamp for unique ID
     const newOpening = { ...opening, id };
-    this.openings.push(newOpening);
+    openings.push(newOpening);
+    this.saveOpenings(openings);
     console.log('Added opening:', newOpening);
     return id;
   }
 
   updateOpening(id: string, opening: Partial<Opening>): boolean {
-    const index = this.openings.findIndex(o => o.id === id);
+    const openings = this.loadOpenings();
+    const index = openings.findIndex(o => o.id === id);
     if (index !== -1) {
-      this.openings[index] = { ...this.openings[index], ...opening };
+      openings[index] = { ...openings[index], ...opening };
+      this.saveOpenings(openings);
       return true;
     }
     return false;
   }
 
   deleteOpening(id: string): boolean {
-    const index = this.openings.findIndex(o => o.id === id);
+    const openings = this.loadOpenings();
+    const index = openings.findIndex(o => o.id === id);
     if (index !== -1) {
-      this.openings.splice(index, 1);
+      openings.splice(index, 1);
+      this.saveOpenings(openings);
       return true;
     }
     return false;
