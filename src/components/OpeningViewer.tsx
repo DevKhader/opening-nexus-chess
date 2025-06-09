@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Chess } from 'chess.js';
 import { ArrowLeft, ArrowRight, RotateCcw, ArrowLeft as BackIcon } from 'lucide-react';
@@ -12,7 +13,7 @@ const OpeningViewer = () => {
   const [opening, setOpening] = useState<Opening | null>(null);
   const [currentVariation, setCurrentVariation] = useState<string[] | null>(null);
   const [variationStartMove, setVariationStartMove] = useState(0);
-  const [mainLinePosition, setMainLinePosition] = useState(0); // Track main line position
+  const [mainLinePosition, setMainLinePosition] = useState(0);
   
   useEffect(() => {
     if (id) {
@@ -83,8 +84,8 @@ const OpeningViewer = () => {
     // Reset the game to starting position
     game.reset();
     
-    // Play main line moves up to the variation start point
-    for (let i = 0; i < variation.startMove - 1; i++) {
+    // Play main line moves up to the variation start point (not -1)
+    for (let i = 0; i < variation.startMove; i++) {
       if (i < opening.moves.length) {
         try {
           game.move(opening.moves[i]);
@@ -96,7 +97,7 @@ const OpeningViewer = () => {
     
     // Set the variation as current moves
     setCurrentVariation(variation.moves);
-    setVariationStartMove(variation.startMove - 1);
+    setVariationStartMove(variation.startMove);
     setCurrentMove(0); // Reset to start of variation
   };
 
@@ -193,10 +194,10 @@ const OpeningViewer = () => {
           </h3>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {currentMoves.map((move, index) => {
-              const moveNumber = formatMoveNumber(index);
-              const isWhite = isWhiteMove(index);
+              const moveNumber = formatMoveNumber(variationStartMove + index);
+              const isWhite = isWhiteMove(variationStartMove + index);
               const isCurrentMove = index === currentMove - 1;
-              const hasVariation = !currentVariation && getVariationsAtMove(index).length > 0;
+              const hasVariation = !currentVariation && getVariationsAtMove(variationStartMove + index).length > 0;
 
               return (
                 <div key={index} className="space-y-1">
@@ -216,7 +217,7 @@ const OpeningViewer = () => {
                   
                   {hasVariation && index < currentMove && (
                     <div className="ml-6 space-y-1">
-                      {getVariationsAtMove(index).map((variation, vIndex) => (
+                      {getVariationsAtMove(variationStartMove + index).map((variation, vIndex) => (
                         <button
                           key={vIndex}
                           onClick={() => handleVariation(variation)}
