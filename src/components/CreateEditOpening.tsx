@@ -5,6 +5,7 @@ import { Save, Undo, Plus } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { openingsStore } from '../store/openingsStore';
 import ChessBoard from './ChessBoard';
+import React from 'react';
 
 interface CreateEditOpeningProps {
   isEdit?: boolean;
@@ -86,34 +87,63 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
     }
   };
 
-  const handleSaveOpening = () => {
-    if (!openingName.trim()) {
-      alert('Please enter an opening name');
+const handleSaveOpening = async () => {
+  if (!openingName.trim()) {
+    alert('Please enter an opening name');
+    return;
+  }
+
+  if (moves.length === 0) {
+    alert('Please add some moves');
+    return;
+  }
+
+  const openingData = {
+    name: openingName,
+    moves,
+    variations,
+    description: openingDescription || 'No description provided'
+  };
+
+  try {
+    // Send POST or PUT request to your backend API
+    const url = isEdit && id ? `http://localhost:3000/api/openings/${id}` : 'http://localhost:3000/api/openings';
+    const method = isEdit && id ? 'PUT' : 'POST';
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(openingData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      alert(`Failed to save opening: ${errorData.error || response.statusText}`);
       return;
     }
 
-    if (moves.length === 0) {
-      alert('Please add some moves');
-      return;
-    }
+    const savedOpening = await response.json();
+    console.log('Saved opening:', savedOpening);
 
-    const openingData = {
-      name: openingName,
-      moves,
-      variations,
-      description: openingDescription || 'No description provided'
-    };
+    alert(`Opening ${isEdit ? 'updated' : 'saved'} successfully!`);
 
+    // Optionally update your local store as well
     if (isEdit && id) {
       openingsStore.updateOpening(id, openingData);
-      console.log('Updated opening:', openingData);
     } else {
-      const newId = openingsStore.addOpening(openingData);
-      console.log('Created new opening with ID:', newId);
+      openingsStore.addOpening(openingData);
     }
 
     navigate('/openings');
-  };
+
+  } catch (error) {
+    console.error('Network or server error:', error);
+    alert('Error connecting to backend. Please try again later.');
+  }
+};
+
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
