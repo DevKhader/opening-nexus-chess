@@ -107,7 +107,7 @@ const handleSaveOpening = async () => {
 
   try {
     // Send POST or PUT request to your backend API
-    const url = isEdit && id ? `http://localhost:3000/api/openings/${id}` : 'http://localhost:3000/api/openings';
+    const url = isEdit && id ? `https://chess-opening.onrender.com/api/openings/${id}` : 'https://chess-opening.onrender.com/api/openings';
     const method = isEdit && id ? 'PUT' : 'POST';
 
     const response = await fetch(url, {
