@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Chess } from 'chess.js';
 import { ArrowLeft, ArrowRight, RotateCcw, ArrowLeft as BackIcon } from 'lucide-react';
@@ -13,6 +12,7 @@ const OpeningViewer = () => {
   const [opening, setOpening] = useState<Opening | null>(null);
   const [currentVariation, setCurrentVariation] = useState<string[] | null>(null);
   const [variationStartMove, setVariationStartMove] = useState(0);
+  const [mainLinePosition, setMainLinePosition] = useState(0); // Track main line position
   
   useEffect(() => {
     if (id) {
@@ -45,6 +45,9 @@ const OpeningViewer = () => {
       try {
         game.move(currentMoves[currentMove]);
         setCurrentMove(currentMove + 1);
+        if (!currentVariation) {
+          setMainLinePosition(currentMove + 1);
+        }
       } catch (error) {
         console.error('Invalid move:', error);
       }
@@ -55,6 +58,9 @@ const OpeningViewer = () => {
     if (currentMove > 0) {
       game.undo();
       setCurrentMove(currentMove - 1);
+      if (!currentVariation) {
+        setMainLinePosition(currentMove - 1);
+      }
     }
   };
 
@@ -63,10 +69,16 @@ const OpeningViewer = () => {
     setCurrentMove(0);
     setCurrentVariation(null);
     setVariationStartMove(0);
+    setMainLinePosition(0);
   };
 
   const handleVariation = (variation: any) => {
     console.log('Playing variation:', variation);
+    
+    // Store current main line position before switching
+    if (!currentVariation) {
+      setMainLinePosition(currentMove);
+    }
     
     // Reset the game to starting position
     game.reset();
@@ -86,6 +98,24 @@ const OpeningViewer = () => {
     setCurrentVariation(variation.moves);
     setVariationStartMove(variation.startMove - 1);
     setCurrentMove(0); // Reset to start of variation
+  };
+
+  const handleBackToMainLine = () => {
+    setCurrentVariation(null);
+    setVariationStartMove(0);
+    
+    // Reset game and replay main line up to the stored position
+    game.reset();
+    for (let i = 0; i < mainLinePosition; i++) {
+      if (i < opening.moves.length) {
+        try {
+          game.move(opening.moves[i]);
+        } catch (error) {
+          console.error('Error replaying main line move:', error);
+        }
+      }
+    }
+    setCurrentMove(mainLinePosition);
   };
 
   const formatMoveNumber = (index: number) => {
@@ -204,18 +234,7 @@ const OpeningViewer = () => {
           
           {currentVariation && (
             <button
-              onClick={() => {
-                setCurrentVariation(null);
-                setVariationStartMove(0);
-                game.reset();
-                opening.moves.slice(0, currentMove).forEach(move => {
-                  try {
-                    game.move(move);
-                  } catch (error) {
-                    console.error('Error replaying move:', error);
-                  }
-                });
-              }}
+              onClick={handleBackToMainLine}
               className="mt-4 w-full px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 transition-colors duration-200"
             >
               Back to Main Line
