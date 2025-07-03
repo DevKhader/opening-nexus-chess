@@ -25,9 +25,8 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
     const fetchOpening = async () => {
       if (isEdit && id) {
         try {
-          const res = await fetch(`https://chess-opening.onrender.com/api/openings`);
-          const all = await res.json();
-          const opening = all.find((o: any) => o._id === id);
+          const res = await fetch(`https://chess-opening.onrender.com/api/openings/${id}`);
+          const opening = await res.json();
           if (opening) {
             setOpeningName(opening.name);
             setOpeningDescription(opening.description);
