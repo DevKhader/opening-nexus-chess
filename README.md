@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**: https://chess-opening-2yv.onrener.com
+**URL**: https://chess-opening-2yv.onrender.com
 
 ## What technologies are used for this project?
 
