@@ -4,18 +4,16 @@ import { ArrowLeft, ArrowRight, RotateCcw, ArrowLeft as BackIcon } from 'lucide-
 import { Link, useParams } from 'react-router-dom';
 import ChessBoard from './ChessBoard';
 
-interface Variation {
-  name: string;
-  startMove: number;
-  moves: string[];
-}
-
 interface Opening {
-  _id: string;
+  id: string;
   name: string;
-  description: string;
   moves: string[];
-  variations: Variation[];
+  variations: Array<{
+    name: string;
+    startMove: number;
+    moves: string[];
+  }>;
+  description: string;
 }
 
 const OpeningViewer = () => {
@@ -28,17 +26,12 @@ const OpeningViewer = () => {
   const [mainLinePosition, setMainLinePosition] = useState(0);
 
   useEffect(() => {
-    const fetchOpening = async () => {
-      if (!id) return;
-      try {
-        const res = await fetch(`https://chess-opening.onrender.com/api/openings/${id}`);
-        const data = await res.json();
-        setOpening(data);
-      } catch (err) {
-        console.error('Error fetching opening:', err);
-      }
-    };
-    fetchOpening();
+    if (id) {
+      fetch(`https://chess-opening.onrender.com/api/openings/${id}`)
+        .then((res) => res.json())
+        .then((data) => setOpening(data))
+        .catch(() => setOpening(null));
+    }
   }, [id]);
 
   if (!opening) {
@@ -65,9 +58,7 @@ const OpeningViewer = () => {
       try {
         game.move(currentMoves[currentMove]);
         setCurrentMove(currentMove + 1);
-        if (!currentVariation) {
-          setMainLinePosition(currentMove + 1);
-        }
+        if (!currentVariation) setMainLinePosition(currentMove + 1);
       } catch (error) {
         console.error('Invalid move:', error);
       }
@@ -78,9 +69,7 @@ const OpeningViewer = () => {
     if (currentMove > 0) {
       game.undo();
       setCurrentMove(currentMove - 1);
-      if (!currentVariation) {
-        setMainLinePosition(currentMove - 1);
-      }
+      if (!currentVariation) setMainLinePosition(currentMove - 1);
     }
   };
 
@@ -92,10 +81,8 @@ const OpeningViewer = () => {
     setMainLinePosition(0);
   };
 
-  const handleVariation = (variation: Variation) => {
-    if (!currentVariation) {
-      setMainLinePosition(currentMove);
-    }
+  const handleVariation = (variation: any) => {
+    if (!currentVariation) setMainLinePosition(currentMove);
     game.reset();
     for (let i = 0; i < variation.startMove; i++) {
       if (i < opening.moves.length) {
@@ -130,7 +117,7 @@ const OpeningViewer = () => {
   const formatMoveNumber = (index: number) => Math.floor(index / 2) + 1;
   const isWhiteMove = (index: number) => index % 2 === 0;
   const getVariationsAtMove = (moveIndex: number) =>
-    opening.variations.filter(v => v.startMove === moveIndex + 1);
+    opening.variations.filter((variation) => variation.startMove === moveIndex + 1);
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -148,7 +135,7 @@ const OpeningViewer = () => {
         {opening.name}
         {currentVariation && (
           <span className="text-emerald-400 text-xl ml-4">
-            - {opening.variations.find(v => v.moves === currentVariation)?.name}
+            - {opening.variations.find((v) => v.moves === currentVariation)?.name}
           </span>
         )}
       </h1>
@@ -157,15 +144,32 @@ const OpeningViewer = () => {
         <div className="lg:col-span-2">
           <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
             <ChessBoard game={game} isInteractive={false} />
+
             <div className="flex justify-center space-x-4 mt-6">
-              <button onClick={handlePrev} disabled={currentMove === 0} className="flex items-center space-x-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
-                <ArrowLeft size={20} /><span>Prev</span>
+              <button
+                onClick={handlePrev}
+                disabled={currentMove === 0}
+                className="flex items-center space-x-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              >
+                <ArrowLeft size={20} />
+                <span>Prev</span>
               </button>
-              <button onClick={handleReset} className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200">
-                <RotateCcw size={20} /><span>Reset</span>
+
+              <button
+                onClick={handleReset}
+                className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200"
+              >
+                <RotateCcw size={20} />
+                <span>Reset</span>
               </button>
-              <button onClick={handleNext} disabled={currentMove >= currentMoves.length} className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
-                <span>Next</span><ArrowRight size={20} />
+
+              <button
+                onClick={handleNext}
+                disabled={currentMove >= currentMoves.length}
+                className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              >
+                <span>Next</span>
+                <ArrowRight size={20} />
               </button>
             </div>
           </div>
@@ -184,11 +188,22 @@ const OpeningViewer = () => {
 
               return (
                 <div key={index} className="space-y-1">
-                  <div className={`flex items-center space-x-2 p-2 rounded ${isCurrentMove ? 'bg-emerald-600' : 'hover:bg-slate-700'} transition-colors duration-200`}>
-                    {isWhite && <span className="text-slate-400 font-medium w-8">{moveNumber}.</span>}
+                  <div
+                    className={`flex items-center space-x-2 p-2 rounded ${
+                      isCurrentMove ? 'bg-emerald-600' : 'hover:bg-slate-700'
+                    } transition-colors duration-200`}
+                  >
+                    {isWhite && (
+                      <span className="text-slate-400 font-medium w-8">
+                        {moveNumber}.
+                      </span>
+                    )}
                     <span className="text-white font-mono">{move}</span>
-                    {index < currentMove && <span className="text-emerald-400 text-xs">✓</span>}
+                    {index < currentMove && (
+                      <span className="text-emerald-400 text-xs">✓</span>
+                    )}
                   </div>
+
                   {hasVariation && index < currentMove && (
                     <div className="ml-6 space-y-1">
                       {getVariationsAtMove(variationStartMove + index).map((variation, vIndex) => (
@@ -206,6 +221,7 @@ const OpeningViewer = () => {
               );
             })}
           </div>
+
           {currentVariation && (
             <button
               onClick={handleBackToMainLine}
