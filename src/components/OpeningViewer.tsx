@@ -1,10 +1,22 @@
-
 import { useState, useEffect } from 'react';
 import { Chess } from 'chess.js';
 import { ArrowLeft, ArrowRight, RotateCcw, ArrowLeft as BackIcon } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import ChessBoard from './ChessBoard';
-import { openingsStore, Opening } from '../store/openingsStore';
+
+interface Variation {
+  name: string;
+  startMove: number;
+  moves: string[];
+}
+
+interface Opening {
+  _id: string;
+  name: string;
+  description: string;
+  moves: string[];
+  variations: Variation[];
+}
 
 const OpeningViewer = () => {
   const { id } = useParams();
@@ -14,12 +26,19 @@ const OpeningViewer = () => {
   const [currentVariation, setCurrentVariation] = useState<string[] | null>(null);
   const [variationStartMove, setVariationStartMove] = useState(0);
   const [mainLinePosition, setMainLinePosition] = useState(0);
-  
+
   useEffect(() => {
-    if (id) {
-      const foundOpening = openingsStore.getOpeningById(id);
-      setOpening(foundOpening || null);
-    }
+    const fetchOpening = async () => {
+      if (!id) return;
+      try {
+        const res = await fetch(`https://chess-opening.onrender.com/api/openings/${id}`);
+        const data = await res.json();
+        setOpening(data);
+      } catch (err) {
+        console.error('Error fetching opening:', err);
+      }
+    };
+    fetchOpening();
   }, [id]);
 
   if (!opening) {
@@ -73,18 +92,11 @@ const OpeningViewer = () => {
     setMainLinePosition(0);
   };
 
-  const handleVariation = (variation: any) => {
-    console.log('Playing variation:', variation);
-    
-    // Store current main line position before switching
+  const handleVariation = (variation: Variation) => {
     if (!currentVariation) {
       setMainLinePosition(currentMove);
     }
-    
-    // Reset the game to starting position
     game.reset();
-    
-    // Play main line moves up to the variation start point (not -1)
     for (let i = 0; i < variation.startMove; i++) {
       if (i < opening.moves.length) {
         try {
@@ -94,18 +106,14 @@ const OpeningViewer = () => {
         }
       }
     }
-    
-    // Set the variation as current moves
     setCurrentVariation(variation.moves);
     setVariationStartMove(variation.startMove);
-    setCurrentMove(0); // Reset to start of variation
+    setCurrentMove(0);
   };
 
   const handleBackToMainLine = () => {
     setCurrentVariation(null);
     setVariationStartMove(0);
-    
-    // Reset game and replay main line up to the stored position
     game.reset();
     for (let i = 0; i < mainLinePosition; i++) {
       if (i < opening.moves.length) {
@@ -119,18 +127,10 @@ const OpeningViewer = () => {
     setCurrentMove(mainLinePosition);
   };
 
-  const formatMoveNumber = (index: number) => {
-    return Math.floor(index / 2) + 1;
-  };
-
-  const isWhiteMove = (index: number) => {
-    return index % 2 === 0;
-  };
-
-  // Find variations that start at the next move
-  const getVariationsAtMove = (moveIndex: number) => {
-    return opening.variations.filter(variation => variation.startMove === moveIndex + 1);
-  };
+  const formatMoveNumber = (index: number) => Math.floor(index / 2) + 1;
+  const isWhiteMove = (index: number) => index % 2 === 0;
+  const getVariationsAtMove = (moveIndex: number) =>
+    opening.variations.filter(v => v.startMove === moveIndex + 1);
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -157,32 +157,15 @@ const OpeningViewer = () => {
         <div className="lg:col-span-2">
           <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
             <ChessBoard game={game} isInteractive={false} />
-            
             <div className="flex justify-center space-x-4 mt-6">
-              <button
-                onClick={handlePrev}
-                disabled={currentMove === 0}
-                className="flex items-center space-x-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-              >
-                <ArrowLeft size={20} />
-                <span>Prev</span>
+              <button onClick={handlePrev} disabled={currentMove === 0} className="flex items-center space-x-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
+                <ArrowLeft size={20} /><span>Prev</span>
               </button>
-              
-              <button
-                onClick={handleReset}
-                className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200"
-              >
-                <RotateCcw size={20} />
-                <span>Reset</span>
+              <button onClick={handleReset} className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200">
+                <RotateCcw size={20} /><span>Reset</span>
               </button>
-              
-              <button
-                onClick={handleNext}
-                disabled={currentMove >= currentMoves.length}
-                className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-              >
-                <span>Next</span>
-                <ArrowRight size={20} />
+              <button onClick={handleNext} disabled={currentMove >= currentMoves.length} className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
+                <span>Next</span><ArrowRight size={20} />
               </button>
             </div>
           </div>
@@ -201,20 +184,11 @@ const OpeningViewer = () => {
 
               return (
                 <div key={index} className="space-y-1">
-                  <div className={`flex items-center space-x-2 p-2 rounded ${
-                    isCurrentMove ? 'bg-emerald-600' : 'hover:bg-slate-700'
-                  } transition-colors duration-200`}>
-                    {isWhite && (
-                      <span className="text-slate-400 font-medium w-8">
-                        {moveNumber}.
-                      </span>
-                    )}
+                  <div className={`flex items-center space-x-2 p-2 rounded ${isCurrentMove ? 'bg-emerald-600' : 'hover:bg-slate-700'} transition-colors duration-200`}>
+                    {isWhite && <span className="text-slate-400 font-medium w-8">{moveNumber}.</span>}
                     <span className="text-white font-mono">{move}</span>
-                    {index < currentMove && (
-                      <span className="text-emerald-400 text-xs">✓</span>
-                    )}
+                    {index < currentMove && <span className="text-emerald-400 text-xs">✓</span>}
                   </div>
-                  
                   {hasVariation && index < currentMove && (
                     <div className="ml-6 space-y-1">
                       {getVariationsAtMove(variationStartMove + index).map((variation, vIndex) => (
@@ -232,7 +206,6 @@ const OpeningViewer = () => {
               );
             })}
           </div>
-          
           {currentVariation && (
             <button
               onClick={handleBackToMainLine}
