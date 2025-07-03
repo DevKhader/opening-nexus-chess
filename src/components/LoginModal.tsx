@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { X } from 'lucide-react';
 
@@ -75,10 +74,6 @@ const LoginModal = ({ onClose, onLogin }: LoginModalProps) => {
             Login
           </button>
         </form>
-
-        <div className="mt-4 text-sm text-slate-400 text-center">
-          Demo credentials: admin / chess123
-        </div>
       </div>
     </div>
   );
