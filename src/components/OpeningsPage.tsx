@@ -1,8 +1,18 @@
-
 import { useState, useEffect } from 'react';
 import { Search, BookOpen, Eye, Edit, Trash2, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { openingsStore } from '../store/openingsStore';
+
+interface Opening {
+  _id: string;
+  name: string;
+  description: string;
+  moves: string[];
+  variations: {
+    name: string;
+    startMove: number;
+    moves: string[];
+  }[];
+}
 
 interface OpeningsPageProps {
   isAdmin: boolean;
@@ -10,53 +20,44 @@ interface OpeningsPageProps {
 
 const OpeningsPage = ({ isAdmin }: OpeningsPageProps) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [openings, setOpenings] = useState([]);
+  const [openings, setOpenings] = useState<Opening[]>([]);
 
-
-  useEffect(() => {
   const fetchOpenings = async () => {
     try {
       const res = await fetch('https://chess-opening.onrender.com/api/openings');
       const data = await res.json();
       setOpenings(data);
-    } catch (error) {
-      console.error('Failed to fetch openings:', error);
+    } catch (err) {
+      console.error('Failed to fetch openings:', err);
     }
   };
 
-  fetchOpenings();
+  useEffect(() => {
+    fetchOpenings();
+  }, []);
 
-  // Refresh when window gains focus (optional)
-  const handleFocus = () => fetchOpenings();
-  window.addEventListener('focus', handleFocus);
+  useEffect(() => {
+    const handleFocus = () => fetchOpenings();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
-  return () => window.removeEventListener('focus', handleFocus);
-}, []);
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this opening?')) return;
 
+    try {
+      await fetch(`https://chess-opening.onrender.com/api/openings/${id}`, {
+        method: 'DELETE',
+      });
+      await fetchOpenings(); // Refresh after deletion
+    } catch (err) {
+      console.error('Failed to delete:', err);
+    }
+  };
 
   const filteredOpenings = openings.filter(opening =>
     opening.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this opening?')) {
-      try {
-  const res = await fetch(`https://chess-opening.onrender.com/api/openings/${id}`, {
-    method: 'DELETE',
-  });
-
-  if (res.ok) {
-    setOpenings(prev => prev.filter(opening => opening._id !== id));
-    console.log('Deleted opening:', id);
-  } else {
-    console.error('Failed to delete opening');
-  }
-} catch (error) {
-  console.error('Error deleting opening:', error);
-}
-
-    }
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -91,12 +92,12 @@ const OpeningsPage = ({ isAdmin }: OpeningsPageProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredOpenings.map((opening) => (
           <div
-            key={opening.id}
+            key={opening._id}
             className="bg-slate-800 border border-slate-700 rounded-lg p-6 hover:border-emerald-500 transition-all duration-200 hover:shadow-lg"
           >
             <h3 className="text-xl font-bold text-white mb-2">{opening.name}</h3>
             <p className="text-slate-300 mb-4">{opening.description}</p>
-            
+
             <div className="space-y-2 mb-4">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-400">Main line moves:</span>
@@ -112,21 +113,21 @@ const OpeningsPage = ({ isAdmin }: OpeningsPageProps) => {
               {isAdmin ? (
                 <>
                   <Link
-                    to={`/opening/${opening.id}`}
+                    to={`/opening/${opening._id}`}
                     className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200"
                   >
                     <Eye size={16} />
                     <span>Explore</span>
                   </Link>
                   <Link
-                    to={`/edit-opening/${opening.id}`}
+                    to={`/edit-opening/${opening._id}`}
                     className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                   >
                     <Edit size={16} />
                     <span>Edit</span>
                   </Link>
                   <button 
-                    onClick={() => handleDelete(opening.id)}
+                    onClick={() => handleDelete(opening._id)}
                     className="flex items-center justify-center px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
                   >
                     <Trash2 size={16} />
@@ -134,7 +135,7 @@ const OpeningsPage = ({ isAdmin }: OpeningsPageProps) => {
                 </>
               ) : (
                 <Link
-                  to={`/opening/${opening.id}`}
+                  to={`/opening/${opening._id}`}
                   className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200"
                 >
                   <Eye size={16} />
