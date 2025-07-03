@@ -10,22 +10,29 @@ interface OpeningsPageProps {
 
 const OpeningsPage = ({ isAdmin }: OpeningsPageProps) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [openings, setOpenings] = useState(openingsStore.getAllOpenings());
+  const [openings, setOpenings] = useState([]);
+
 
   useEffect(() => {
-    // Refresh openings list whenever the component mounts
-    setOpenings(openingsStore.getAllOpenings());
-  }, []);
+  const fetchOpenings = async () => {
+    try {
+      const res = await fetch('https://chess-opening.onrender.com/api/openings');
+      const data = await res.json();
+      setOpenings(data);
+    } catch (error) {
+      console.error('Failed to fetch openings:', error);
+    }
+  };
 
-  // Also refresh when navigating back to this page
-  useEffect(() => {
-    const handleFocus = () => {
-      setOpenings(openingsStore.getAllOpenings());
-    };
+  fetchOpenings();
 
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
+  // Refresh when window gains focus (optional)
+  const handleFocus = () => fetchOpenings();
+  window.addEventListener('focus', handleFocus);
+
+  return () => window.removeEventListener('focus', handleFocus);
+}, []);
+
 
   const filteredOpenings = openings.filter(opening =>
     opening.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -33,11 +40,21 @@ const OpeningsPage = ({ isAdmin }: OpeningsPageProps) => {
 
   const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this opening?')) {
-      const success = openingsStore.deleteOpening(id);
-      if (success) {
-        setOpenings(openingsStore.getAllOpenings());
-        console.log('Deleted opening:', id);
-      }
+      try {
+  const res = await fetch(`https://chess-opening.onrender.com/api/openings/${id}`, {
+    method: 'DELETE',
+  });
+
+  if (res.ok) {
+    setOpenings(prev => prev.filter(opening => opening._id !== id));
+    console.log('Deleted opening:', id);
+  } else {
+    console.error('Failed to delete opening');
+  }
+} catch (error) {
+  console.error('Error deleting opening:', error);
+}
+
     }
   };
 
