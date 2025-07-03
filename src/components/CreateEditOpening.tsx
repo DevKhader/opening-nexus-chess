@@ -3,13 +3,8 @@ import { Chess } from 'chess.js';
 import { Save, Undo, Plus } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ChessBoard from './ChessBoard';
-import React from 'react';
 
-interface CreateEditOpeningProps {
-  isEdit?: boolean;
-}
-
-const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
+const CreateEditOpening = ({ isEdit = false }: { isEdit?: boolean }) => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [game] = useState(new Chess());
@@ -24,20 +19,14 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
   useEffect(() => {
     if (isEdit && id) {
       const fetchOpening = async () => {
-        try {
-          const res = await fetch(`https://chess-opening.onrender.com/api/openings/${id}`);
-          if (!res.ok) throw new Error('Failed to fetch opening');
-          const data = await res.json();
-          setOpeningName(data.name);
-          setOpeningDescription(data.description || '');
-          setMoves(data.moves || []);
-          setVariations(data.variations || []);
-          game.reset();
-          (data.moves || []).forEach((move: string) => game.move(move));
-        } catch (err) {
-          console.error(err);
-          alert('Error loading opening');
-        }
+        const res = await fetch(`https://chess-opening.onrender.com/api/openings/${id}`);
+        const data = await res.json();
+        setOpeningName(data.name);
+        setOpeningDescription(data.description);
+        setMoves(data.moves);
+        setVariations(data.variations);
+        game.reset();
+        data.moves.forEach((move: string) => game.move(move));
       };
       fetchOpening();
     }
@@ -54,9 +43,9 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
   const handleUndo = () => {
     game.undo();
     if (isAddingVariation) {
-      setVariationMoves(variationMoves.slice(0, -1));
+      setVariationMoves((prev) => prev.slice(0, -1));
     } else {
-      setMoves(moves.slice(0, -1));
+      setMoves((prev) => prev.slice(0, -1));
     }
   };
 
@@ -74,62 +63,54 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
 
     const variationName = prompt('Enter variation name:');
     if (variationName) {
-      const newVariation = {
-        name: variationName,
-        startMove: variationStartMove,
-        moves: [...variationMoves],
-      };
-      setVariations([...variations, newVariation]);
+      setVariations((prev) => [
+        ...prev,
+        { name: variationName, startMove: variationStartMove, moves: variationMoves }
+      ]);
       game.reset();
-      moves.forEach(move => game.move(move));
-      setIsAddingVariation(false);
+      moves.forEach((move) => game.move(move));
       setVariationMoves([]);
+      setIsAddingVariation(false);
     }
   };
 
   const handleSaveOpening = async () => {
-    if (!openingName.trim()) {
-      alert('Please enter an opening name');
+    if (!openingName.trim() || moves.length === 0) {
+      alert('Please provide a name and some moves');
       return;
     }
 
-    if (moves.length === 0) {
-      alert('Please add some moves');
-      return;
-    }
-
-    const openingData = {
+    const payload = {
       name: openingName,
       description: openingDescription || 'No description provided',
       moves,
-      variations,
+      variations
     };
 
-    try {
-      const url = isEdit && id
-        ? `https://chess-opening.onrender.com/api/openings/${id}`
-        : `https://chess-opening.onrender.com/api/openings`;
-      const method = isEdit ? 'PUT' : 'POST';
+    const url = isEdit && id
+      ? `https://chess-opening.onrender.com/api/openings/${id}`
+      : `https://chess-opening.onrender.com/api/openings`;
 
+    const method = isEdit ? 'PUT' : 'POST';
+
+    try {
       const res = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(openingData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) {
         const errorData = await res.json();
-        alert(`Failed to save opening: ${errorData.error || res.statusText}`);
+        alert(`Error: ${errorData.error || res.statusText}`);
         return;
       }
 
       alert(`Opening ${isEdit ? 'updated' : 'saved'} successfully!`);
       navigate('/openings');
-    } catch (err) {
-      console.error(err);
-      alert('Network error. Please try again later.');
+    } catch (error) {
+      console.error(error);
+      alert('Failed to connect to backend.');
     }
   };
 
@@ -142,9 +123,7 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <div className="mb-6">
-            <label className="block text-white text-sm font-medium mb-2">
-              Opening Name
-            </label>
+            <label className="block text-white text-sm font-medium mb-2">Opening Name</label>
             <input
               type="text"
               value={openingName}
@@ -155,9 +134,7 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
           </div>
 
           <div className="mb-6">
-            <label className="block text-white text-sm font-medium mb-2">
-              Description
-            </label>
+            <label className="block text-white text-sm font-medium mb-2">Description</label>
             <input
               type="text"
               value={openingDescription}
@@ -184,7 +161,7 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
                 <button
                   onClick={handleAddVariation}
                   disabled={moves.length === 0}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 >
                   <Plus size={20} />
                   <span>Add Variation</span>
