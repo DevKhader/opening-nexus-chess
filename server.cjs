@@ -12,15 +12,10 @@ app.use(express.json());
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log("✔️ MongoDB connected");
-  })
-  .catch(err => {
-    console.error("MongoDB connection error:", err);
-  });
+  .then(() => console.log("✔️ MongoDB connected"))
+  .catch(err => console.error("MongoDB connection error:", err));
 
-
-// Define Opening schema with variations and description
+// Opening schema
 const openingSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String, default: 'No description provided' },
@@ -38,7 +33,30 @@ const openingSchema = new mongoose.Schema({
 
 const Opening = mongoose.model('Opening', openingSchema);
 
-// POST route to save opening
+// Routes
+
+// GET all openings
+app.get('/api/openings', async (req, res) => {
+  try {
+    const openings = await Opening.find();
+    res.json(openings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET single opening by ID ✅ (missing in your version)
+app.get('/api/openings/:id', async (req, res) => {
+  try {
+    const opening = await Opening.findById(req.params.id);
+    if (!opening) return res.status(404).json({ error: 'Opening not found' });
+    res.json(opening);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST create new opening
 app.post('/api/openings', async (req, res) => {
   try {
     const { name, description, pgn, moves, variations } = req.body;
@@ -62,10 +80,9 @@ app.post('/api/openings', async (req, res) => {
   }
 });
 
-// PUT route to update opening by ID
+// PUT update opening
 app.put('/api/openings/:id', async (req, res) => {
   try {
-    const { id } = req.params;
     const { name, description, pgn, moves, variations } = req.body;
 
     if (!name || !moves || moves.length === 0) {
@@ -73,7 +90,7 @@ app.put('/api/openings/:id', async (req, res) => {
     }
 
     const updatedOpening = await Opening.findByIdAndUpdate(
-      id,
+      req.params.id,
       { name, description, pgn, moves, variations: variations || [] },
       { new: true, runValidators: true }
     );
@@ -84,21 +101,22 @@ app.put('/api/openings/:id', async (req, res) => {
 
     res.json({ success: true, opening: updatedOpening });
   } catch (err) {
-    console.error('Error updating opening:', err);
     res.status(500).json({ error: 'Server error while updating opening.' });
   }
 });
 
-// GET route to retrieve all openings
-app.get('/api/openings', async (req, res) => {
+// DELETE opening ✅ (optional but useful)
+app.delete('/api/openings/:id', async (req, res) => {
   try {
-    const all = await Opening.find();
-    res.json(all);
+    const deleted = await Opening.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Opening not found' });
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
