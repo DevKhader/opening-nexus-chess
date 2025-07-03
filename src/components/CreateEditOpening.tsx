@@ -1,9 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { Chess } from 'chess.js';
 import { Save, Undo, Plus } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { openingsStore } from '../store/openingsStore';
 import ChessBoard from './ChessBoard';
 import React from 'react';
 
@@ -24,19 +22,26 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
   const [variationStartMove, setVariationStartMove] = useState(0);
 
   useEffect(() => {
-    if (isEdit && id) {
-      const opening = openingsStore.getOpeningById(id);
-      if (opening) {
-        setOpeningName(opening.name);
-        setOpeningDescription(opening.description);
-        setMoves(opening.moves);
-        setVariations(opening.variations);
-        
-        // Replay moves on the board
-        game.reset();
-        opening.moves.forEach(move => game.move(move));
+    const fetchOpening = async () => {
+      if (isEdit && id) {
+        try {
+          const res = await fetch(`https://chess-opening.onrender.com/api/openings`);
+          const all = await res.json();
+          const opening = all.find((o: any) => o._id === id);
+          if (opening) {
+            setOpeningName(opening.name);
+            setOpeningDescription(opening.description);
+            setMoves(opening.moves || []);
+            setVariations(opening.variations || []);
+            game.reset();
+            opening.moves.forEach((move: string) => game.move(move));
+          }
+        } catch (error) {
+          console.error('Error loading opening:', error);
+        }
       }
-    }
+    };
+    fetchOpening();
   }, [isEdit, id, game]);
 
   const handleMove = (move: string) => {
@@ -77,73 +82,59 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
         moves: [...variationMoves]
       };
       setVariations([...variations, newVariation]);
-      
-      // Reset to main line position
+
       game.reset();
       moves.forEach(move => game.move(move));
-      
       setIsAddingVariation(false);
       setVariationMoves([]);
     }
   };
 
-const handleSaveOpening = async () => {
-  if (!openingName.trim()) {
-    alert('Please enter an opening name');
-    return;
-  }
-
-  if (moves.length === 0) {
-    alert('Please add some moves');
-    return;
-  }
-
-  const openingData = {
-    name: openingName,
-    moves,
-    variations,
-    description: openingDescription || 'No description provided'
-  };
-
-  try {
-    // Send POST or PUT request to your backend API
-    const url = isEdit && id ? `https://chess-opening.onrender.com/api/openings/${id}` : 'https://chess-opening.onrender.com/api/openings';
-    const method = isEdit && id ? 'PUT' : 'POST';
-
-    const response = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(openingData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      alert(`Failed to save opening: ${errorData.error || response.statusText}`);
+  const handleSaveOpening = async () => {
+    if (!openingName.trim()) {
+      alert('Please enter an opening name');
       return;
     }
 
-    const savedOpening = await response.json();
-    console.log('Saved opening:', savedOpening);
-
-    alert(`Opening ${isEdit ? 'updated' : 'saved'} successfully!`);
-
-    // Optionally update your local store as well
-    if (isEdit && id) {
-      openingsStore.updateOpening(id, openingData);
-    } else {
-      openingsStore.addOpening(openingData);
+    if (moves.length === 0) {
+      alert('Please add some moves');
+      return;
     }
 
-    navigate('/openings');
+    const openingData = {
+      name: openingName,
+      moves,
+      variations,
+      description: openingDescription || 'No description provided'
+    };
 
-  } catch (error) {
-    console.error('Network or server error:', error);
-    alert('Error connecting to backend. Please try again later.');
-  }
-};
+    try {
+      const url = isEdit && id
+        ? `https://chess-opening.onrender.com/api/openings/${id}`
+        : 'https://chess-opening.onrender.com/api/openings';
+      const method = isEdit && id ? 'PUT' : 'POST';
 
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(openingData)
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert(`Failed to save: ${error.error}`);
+        return;
+      }
+
+      alert(`Opening ${isEdit ? 'updated' : 'saved'} successfully!`);
+      navigate('/openings');
+    } catch (error) {
+      console.error('Error saving opening:', error);
+      alert('Failed to connect to server.');
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -181,7 +172,7 @@ const handleSaveOpening = async () => {
 
           <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
             <ChessBoard game={game} isInteractive={true} onMove={handleMove} />
-            
+
             <div className="flex justify-center space-x-4 mt-6">
               <button
                 onClick={handleUndo}
@@ -191,7 +182,7 @@ const handleSaveOpening = async () => {
                 <Undo size={20} />
                 <span>Undo</span>
               </button>
-              
+
               {!isAddingVariation ? (
                 <button
                   onClick={handleAddVariation}
