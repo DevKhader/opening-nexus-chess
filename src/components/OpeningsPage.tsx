@@ -7,11 +7,11 @@ interface Opening {
   name: string;
   description: string;
   moves: string[];
-  variations: {
+  variations: Array<{
     name: string;
     startMove: number;
     moves: string[];
-  }[];
+  }>;
 }
 
 interface OpeningsPageProps {
@@ -36,28 +36,21 @@ const OpeningsPage = ({ isAdmin }: OpeningsPageProps) => {
     fetchOpenings();
   }, []);
 
-  useEffect(() => {
-    const handleFocus = () => fetchOpenings();
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
+  const filteredOpenings = openings.filter(opening =>
+    opening.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this opening?')) return;
-
     try {
       await fetch(`https://chess-opening.onrender.com/api/openings/${id}`, {
         method: 'DELETE',
       });
-      await fetchOpenings(); // Refresh after deletion
+      fetchOpenings();
     } catch (err) {
-      console.error('Failed to delete:', err);
+      console.error('Failed to delete opening:', err);
     }
   };
-
-  const filteredOpenings = openings.filter(opening =>
-    opening.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -126,7 +119,7 @@ const OpeningsPage = ({ isAdmin }: OpeningsPageProps) => {
                     <Edit size={16} />
                     <span>Edit</span>
                   </Link>
-                  <button 
+                  <button
                     onClick={() => handleDelete(opening._id)}
                     className="flex items-center justify-center px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
                   >
