@@ -15,7 +15,7 @@ const Index = () => {
 
   const handleLogin = (username: string, password: string) => {
     // Simple admin check (in real app, this would be secure authentication)
-    if (username === 'admin' && password === 'chess123') {
+    if (username === 'AdminKhader' && password === 'Khader@4518_chess') {
       setIsAdmin(true);
       setShowLoginModal(false);
       return true;
