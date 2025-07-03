@@ -22,26 +22,26 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
   const [variationStartMove, setVariationStartMove] = useState(0);
 
   useEffect(() => {
-    const fetchOpening = async () => {
-      if (isEdit && id) {
+    if (isEdit && id) {
+      const fetchOpening = async () => {
         try {
           const res = await fetch(`https://chess-opening.onrender.com/api/openings/${id}`);
-          const opening = await res.json();
-          if (opening) {
-            setOpeningName(opening.name);
-            setOpeningDescription(opening.description);
-            setMoves(opening.moves || []);
-            setVariations(opening.variations || []);
-            game.reset();
-            opening.moves.forEach((move: string) => game.move(move));
-          }
-        } catch (error) {
-          console.error('Error loading opening:', error);
+          if (!res.ok) throw new Error('Failed to fetch opening');
+          const data = await res.json();
+          setOpeningName(data.name);
+          setOpeningDescription(data.description || '');
+          setMoves(data.moves || []);
+          setVariations(data.variations || []);
+          game.reset();
+          (data.moves || []).forEach((move: string) => game.move(move));
+        } catch (err) {
+          console.error(err);
+          alert('Error loading opening');
         }
-      }
-    };
-    fetchOpening();
-  }, [isEdit, id, game]);
+      };
+      fetchOpening();
+    }
+  }, [isEdit, id]);
 
   const handleMove = (move: string) => {
     if (isAddingVariation) {
@@ -52,11 +52,10 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
   };
 
   const handleUndo = () => {
-    if (isAddingVariation && variationMoves.length > 0) {
-      game.undo();
+    game.undo();
+    if (isAddingVariation) {
       setVariationMoves(variationMoves.slice(0, -1));
-    } else if (!isAddingVariation && moves.length > 0) {
-      game.undo();
+    } else {
       setMoves(moves.slice(0, -1));
     }
   };
@@ -78,10 +77,9 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
       const newVariation = {
         name: variationName,
         startMove: variationStartMove,
-        moves: [...variationMoves]
+        moves: [...variationMoves],
       };
       setVariations([...variations, newVariation]);
-
       game.reset();
       moves.forEach(move => game.move(move));
       setIsAddingVariation(false);
@@ -102,36 +100,36 @@ const CreateEditOpening = ({ isEdit = false }: CreateEditOpeningProps) => {
 
     const openingData = {
       name: openingName,
+      description: openingDescription || 'No description provided',
       moves,
       variations,
-      description: openingDescription || 'No description provided'
     };
 
     try {
       const url = isEdit && id
         ? `https://chess-opening.onrender.com/api/openings/${id}`
-        : 'https://chess-opening.onrender.com/api/openings';
-      const method = isEdit && id ? 'PUT' : 'POST';
+        : `https://chess-opening.onrender.com/api/openings`;
+      const method = isEdit ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(openingData)
+        body: JSON.stringify(openingData),
       });
 
       if (!res.ok) {
-        const error = await res.json();
-        alert(`Failed to save: ${error.error}`);
+        const errorData = await res.json();
+        alert(`Failed to save opening: ${errorData.error || res.statusText}`);
         return;
       }
 
       alert(`Opening ${isEdit ? 'updated' : 'saved'} successfully!`);
       navigate('/openings');
-    } catch (error) {
-      console.error('Error saving opening:', error);
-      alert('Failed to connect to server.');
+    } catch (err) {
+      console.error(err);
+      alert('Network error. Please try again later.');
     }
   };
 
