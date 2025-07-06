@@ -86,7 +86,8 @@ const CreateEditOpening = ({ isEdit = false }: { isEdit?: boolean }) => {
       name: openingName,
       description: openingDescription || 'No description provided',
       moves,
-      variations
+      variations,
+      category: category || 'Uncategorized'
     };
 
     const url = isEdit && id
