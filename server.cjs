@@ -28,6 +28,7 @@ const openingSchema = new mongoose.Schema({
       moves: [{ type: String, required: true }]
     }
   ],
+  category: { type: String, default: 'Uncategorized' }, // 👈 NEW FIELD
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -59,7 +60,7 @@ app.get('/api/openings/:id', async (req, res) => {
 // POST create new opening
 app.post('/api/openings', async (req, res) => {
   try {
-    const { name, description, pgn, moves, variations } = req.body;
+    const { name, description, pgn, moves, variations, category } = req.body;
 
     if (!name || !moves || moves.length === 0) {
       return res.status(400).json({ error: 'Name and moves are required.' });
@@ -70,7 +71,8 @@ app.post('/api/openings', async (req, res) => {
       description: description || 'No description provided',
       pgn,
       moves,
-      variations: variations || []
+      variations: variations || [],
+      category: category || 'Uncategorized'
     });
 
     await newOpening.save();
@@ -83,7 +85,7 @@ app.post('/api/openings', async (req, res) => {
 // PUT update opening
 app.put('/api/openings/:id', async (req, res) => {
   try {
-    const { name, description, pgn, moves, variations } = req.body;
+    const { name, description, pgn, moves, variations, category } = req.body;
 
     if (!name || !moves || moves.length === 0) {
       return res.status(400).json({ error: 'Name and moves are required.' });
@@ -91,7 +93,7 @@ app.put('/api/openings/:id', async (req, res) => {
 
     const updatedOpening = await Opening.findByIdAndUpdate(
       req.params.id,
-      { name, description, pgn, moves, variations: variations || [] },
+      { name, description, pgn, moves, variations: variations || [], category },
       { new: true, runValidators: true }
     );
 
