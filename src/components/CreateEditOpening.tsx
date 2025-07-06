@@ -10,6 +10,7 @@ const CreateEditOpening = ({ isEdit = false }: { isEdit?: boolean }) => {
   const [game] = useState(new Chess());
   const [openingName, setOpeningName] = useState('');
   const [openingDescription, setOpeningDescription] = useState('');
+  const [category, setCategory] = useState('');
   const [moves, setMoves] = useState<string[]>([]);
   const [variations, setVariations] = useState<any[]>([]);
   const [isAddingVariation, setIsAddingVariation] = useState(false);
@@ -23,6 +24,7 @@ const CreateEditOpening = ({ isEdit = false }: { isEdit?: boolean }) => {
         const data = await res.json();
         setOpeningName(data.name);
         setOpeningDescription(data.description);
+        setCategory(data.category || '');
         setMoves(data.moves);
         setVariations(data.variations);
         game.reset();
@@ -140,6 +142,17 @@ const CreateEditOpening = ({ isEdit = false }: { isEdit?: boolean }) => {
               value={openingDescription}
               onChange={(e) => setOpeningDescription(e.target.value)}
               placeholder="Enter opening description..."
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            />
+          </div>
+          
+          <div className="mb-6">
+            <label className="block text-white text-sm font-medium mb-2">Category</label>
+            <input
+              type="text"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Enter category (e.g., Vienna Gambit Group)"
               className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             />
           </div>
