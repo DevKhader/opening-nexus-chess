@@ -6,6 +6,7 @@ interface Opening {
   _id: string;
   name: string;
   description: string;
+  category?: string;
   moves: string[];
   variations: Array<{
     name: string;
@@ -82,63 +83,79 @@ const OpeningsPage = ({ isAdmin }: OpeningsPageProps) => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredOpenings.map((opening) => (
-          <div
-            key={opening._id}
-            className="bg-slate-800 border border-slate-700 rounded-lg p-6 hover:border-emerald-500 transition-all duration-200 hover:shadow-lg"
-          >
-            <h3 className="text-xl font-bold text-white mb-2">{opening.name}</h3>
-            <p className="text-slate-300 mb-4">{opening.description}</p>
+      {/* ✅ Grouped by Category */}
+      {Object.entries(
+        filteredOpenings.reduce((groups, opening) => {
+          const category = opening.category || 'Uncategorized';
+          if (!groups[category]) groups[category] = [];
+          groups[category].push(opening);
+          return groups;
+        }, {} as Record<string, Opening[]>)
+      ).map(([categoryName, categoryOpenings]) => (
+        <div key={categoryName} className="mb-10">
+          <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-600 pb-2">
+            {categoryName}
+          </h2>
 
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-400">Main line moves:</span>
-                <span className="text-emerald-400 font-semibold">{opening.moves.length}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-400">Variations:</span>
-                <span className="text-emerald-400 font-semibold">{opening.variations.length}</span>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {categoryOpenings.map((opening) => (
+              <div
+                key={opening._id}
+                className="bg-slate-800 border border-slate-700 rounded-lg p-6 hover:border-emerald-500 transition-all duration-200 hover:shadow-lg"
+              >
+                <h3 className="text-xl font-bold text-white mb-2">{opening.name}</h3>
+                <p className="text-slate-300 mb-4">{opening.description}</p>
 
-            <div className="flex space-x-2">
-              {isAdmin ? (
-                <>
-                  <Link
-                    to={`/opening/${opening._id}`}
-                    className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200"
-                  >
-                    <Eye size={16} />
-                    <span>Explore</span>
-                  </Link>
-                  <Link
-                    to={`/edit-opening/${opening._id}`}
-                    className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                  >
-                    <Edit size={16} />
-                    <span>Edit</span>
-                  </Link>
-                  <button
-                    onClick={() => handleDelete(opening._id)}
-                    className="flex items-center justify-center px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </>
-              ) : (
-                <Link
-                  to={`/opening/${opening._id}`}
-                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200"
-                >
-                  <Eye size={16} />
-                  <span>Explore</span>
-                </Link>
-              )}
-            </div>
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Main line moves:</span>
+                    <span className="text-emerald-400 font-semibold">{opening.moves.length}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Variations:</span>
+                    <span className="text-emerald-400 font-semibold">{opening.variations.length}</span>
+                  </div>
+                </div>
+
+                <div className="flex space-x-2">
+                  {isAdmin ? (
+                    <>
+                      <Link
+                        to={`/opening/${opening._id}`}
+                        className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200"
+                      >
+                        <Eye size={16} />
+                        <span>Explore</span>
+                      </Link>
+                      <Link
+                        to={`/edit-opening/${opening._id}`}
+                        className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                      >
+                        <Edit size={16} />
+                        <span>Edit</span>
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(opening._id)}
+                        className="flex items-center justify-center px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </>
+                  ) : (
+                    <Link
+                      to={`/opening/${opening._id}`}
+                      className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200"
+                    >
+                      <Eye size={16} />
+                      <span>Explore</span>
+                    </Link>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
 
       {filteredOpenings.length === 0 && (
         <div className="text-center py-12">
