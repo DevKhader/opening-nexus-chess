@@ -25,7 +25,8 @@ const openingSchema = new mongoose.Schema({
     {
       name: { type: String, required: true },
       startMove: { type: Number, required: true },
-      moves: [{ type: String, required: true }]
+      moves: [{ type: String, required: true }],
+      description: { type: String, default: '' }
     }
   ],
   category: { type: String, default: 'Uncategorized' }, // 👈 NEW FIELD
