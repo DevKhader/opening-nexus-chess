@@ -168,50 +168,54 @@ const CreateEditOpening = ({ isEdit = false }: { isEdit?: boolean }) => {
           <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
             <ChessBoard game={game} isInteractive={true} onMove={handleMove} />
 
-            <div className="flex justify-center space-x-4 mt-6">
-              <button
-                onClick={handleUndo}
-                disabled={(isAddingVariation ? variationMoves.length : moves.length) === 0}
-                className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-              >
-                <Undo size={20} />
-                <span>Undo</span>
-              </button>
+            <div className="mt-6">
+  <div className="flex justify-center space-x-4">
+    <button
+      onClick={handleUndo}
+      disabled={(isAddingVariation ? variationMoves.length : moves.length) === 0}
+      className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+    >
+      <Undo size={20} />
+      <span>Undo</span>
+    </button>
 
-              {!isAddingVariation ? (
-                <button
-                  onClick={handleAddVariation}
-                  disabled={moves.length === 0}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                >
-                  <Plus size={20} />
-                  <span>Add Variation</span>
-                </button>
-              ) : (
-                <>
-                  <div className="mt-4">
-                    <label className="block text-white text-sm font-medium mb-2">
-                      Variation Tip / Description
-                    </label>
-                    <textarea
-                      value={variationDescription}
-                      onChange={(e) => setVariationDescription(e.target.value)}
-                      placeholder="e.g., This variation aims for rapid kingside pressure..."
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                      rows={3}
-                    />
-                  </div>
+    {!isAddingVariation ? (
+      <button
+        onClick={handleAddVariation}
+        disabled={moves.length === 0}
+        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+      >
+        <Plus size={20} />
+        <span>Add Variation</span>
+      </button>
+    ) : (
+      <button
+        onClick={handleSaveVariation}
+        className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200"
+      >
+        <Save size={20} />
+        <span>Save Variation</span>
+      </button>
+    )}
+  </div>
 
-                  <button
-                    onClick={handleSaveVariation}
-                    className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200"
-                  >
-                    <Save size={20} />
-                    <span>Save Variation</span>
-                  </button>
-                </>
-              )}
-            </div>
+  {/* This textarea must be OUTSIDE the flex row */}
+  {isAddingVariation && (
+    <div className="mt-6">
+      <label className="block text-white text-sm font-medium mb-2">
+        Variation Tip / Description
+      </label>
+      <textarea
+        value={variationDescription}
+        onChange={(e) => setVariationDescription(e.target.value)}
+        placeholder="e.g., This variation aims for rapid kingside pressure..."
+        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+        rows={3}
+      />
+    </div>
+  )}
+</div>
+
           </div>
 
           <div className="mt-6">
