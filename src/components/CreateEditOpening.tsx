@@ -15,6 +15,7 @@ const CreateEditOpening = ({ isEdit = false }: { isEdit?: boolean }) => {
   const [variations, setVariations] = useState<any[]>([]);
   const [isAddingVariation, setIsAddingVariation] = useState(false);
   const [variationMoves, setVariationMoves] = useState<string[]>([]);
+  const [variationDescription, setVariationDescription] = useState('');
   const [variationStartMove, setVariationStartMove] = useState(0);
 
   useEffect(() => {
@@ -67,11 +68,17 @@ const CreateEditOpening = ({ isEdit = false }: { isEdit?: boolean }) => {
     if (variationName) {
       setVariations((prev) => [
         ...prev,
-        { name: variationName, startMove: variationStartMove, moves: variationMoves }
+        {
+          name: variationName,
+          startMove: variationStartMove,
+          moves: variationMoves,
+          description: variationDescription.trim() || ''
+        }
       ]);
       game.reset();
       moves.forEach((move) => game.move(move));
       setVariationMoves([]);
+      setVariationDescription('');
       setIsAddingVariation(false);
     }
   };
@@ -181,13 +188,28 @@ const CreateEditOpening = ({ isEdit = false }: { isEdit?: boolean }) => {
                   <span>Add Variation</span>
                 </button>
               ) : (
-                <button
-                  onClick={handleSaveVariation}
-                  className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200"
-                >
-                  <Save size={20} />
-                  <span>Save Variation</span>
-                </button>
+                <>
+                  <div className="mt-4">
+                    <label className="block text-white text-sm font-medium mb-2">
+                      Variation Tip / Description
+                    </label>
+                    <textarea
+                      value={variationDescription}
+                      onChange={(e) => setVariationDescription(e.target.value)}
+                      placeholder="e.g., This variation aims for rapid kingside pressure..."
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      rows={3}
+                    />
+                  </div>
+
+                  <button
+                    onClick={handleSaveVariation}
+                    className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200"
+                  >
+                    <Save size={20} />
+                    <span>Save Variation</span>
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -234,6 +256,11 @@ const CreateEditOpening = ({ isEdit = false }: { isEdit?: boolean }) => {
                     <div className="text-sm text-slate-400 mt-1">
                       {variation.moves.length} moves
                     </div>
+                    {variation.description && (
+                      <div className="text-sm text-emerald-300 mt-2 italic">
+                        Tip: {variation.description}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
