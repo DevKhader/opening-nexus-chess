@@ -193,6 +193,15 @@ const OpeningViewer = () => {
               Back to Main Line
             </button>
           )}
+          
+          {currentVariation &&
+            currentMove === currentVariation.length &&
+            opening.variations.find(v => v.moves.join(',') === currentVariation.join(','))?.description && (
+              <div className="mt-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-900 rounded-lg">
+                <strong>Tip:</strong>{' '}
+                {opening.variations.find(v => v.moves.join(',') === currentVariation.join(','))?.description}
+              </div>
+          )}
         </div>
       </div>
     </div>
