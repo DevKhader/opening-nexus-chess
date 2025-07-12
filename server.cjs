@@ -7,7 +7,23 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// ✅ UPDATED CORS SETUP
+const allowedOrigins = [
+  'https://chess-opening-2dyv.onrender.com', // Your frontend Render domain
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
+
 app.use(express.json());
 
 // MongoDB connection
@@ -29,7 +45,7 @@ const openingSchema = new mongoose.Schema({
       description: { type: String, default: '' }
     }
   ],
-  category: { type: String, default: 'Uncategorized' }, // 👈 NEW FIELD
+  category: { type: String, default: 'Uncategorized' },
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -47,7 +63,7 @@ app.get('/api/openings', async (req, res) => {
   }
 });
 
-// GET single opening by ID ✅ (missing in your version)
+// GET single opening by ID
 app.get('/api/openings/:id', async (req, res) => {
   try {
     const opening = await Opening.findById(req.params.id);
@@ -108,7 +124,7 @@ app.put('/api/openings/:id', async (req, res) => {
   }
 });
 
-// DELETE opening ✅ (optional but useful)
+// DELETE opening
 app.delete('/api/openings/:id', async (req, res) => {
   try {
     const deleted = await Opening.findByIdAndDelete(req.params.id);
